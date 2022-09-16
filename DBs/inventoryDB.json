@@ -1,0 +1,1 @@
+{"id": "555555555555", "name": "inventoryDB", "description": "testing ground", "content": [{"id": "8008ES", "name": "coffee", "category": "kitchen", "amount": 3, "priority": "HIGH"}, {"id": "54546545", "name": "honey", "category": "kitchen", "amount": 2, "priority": "low"}]}
