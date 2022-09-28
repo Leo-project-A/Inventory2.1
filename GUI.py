@@ -180,9 +180,10 @@ class inventroyViewWindow(QDialog):
         self.mainLayout = QVBoxLayout()
         # Set up the view and load the data
         self.view = QTableWidget()
-        self.invoObj = selectedObj
-
+        self.invoObj = selectedObj.copy()           # a COPY of the inventory were in
+        print(f"line 186: invo : {self.invoObj}")
         self.itemList = self.invoObj.content
+        print(f"line 186: item list : {self.itemList}")
         self.view.setColumnCount(len(mainConstants.ITEM_LABELS))
         self.view.setHorizontalHeaderLabels(mainConstants.ITEM_LABELS)
         self.itemCategories = self.invoObj.getCategories()
@@ -244,6 +245,7 @@ class inventroyViewWindow(QDialog):
             self.itemList[row].updateCategory(self.view.cellWidget(row, 2).currentText())
             self.itemList[row].updateAmount(int(self.view.cellWidget(row, 3).text()))
             self.itemList[row].updatePriority(self.view.cellWidget(row, 4).currentText())
+            print(f"line 248: {self.itemList[row]}")
         inventory.updateDB(self.invoObj)
         self.close()
 
