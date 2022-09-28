@@ -90,7 +90,8 @@ class Inventory():
         temp.id = self.id
         temp.name = self.name
         temp.description = self.description
-        temp.content = self.content
+        for i in self.content:
+            temp.content.append(i.copy())
         return temp
 
     def printInv(self, details= True, shop=False, filter= ''):
@@ -189,13 +190,12 @@ def create_new_db(filename='inventory', desc='', type='json') -> Inventory:
 def updateDB(inventory: Inventory, type= 'json') -> None:
     """updates the inventory FILE in the db directory
     type: the file format to save the inventory"""
-    temp = inventory.copy()
-    filepath = f"{mainConstants.DATABASE_DIR}/{temp.name}.{type}"
+    filepath = f"{mainConstants.DATABASE_DIR}/{inventory.name}.{type}"
     if type == 'json':
-        with open(filepath, 'w+') as jsonFile:
-            for x,item in enumerate(temp.content):
-                temp.content[x] = item.__dict__
-            inv = json.dumps(temp.__dict__)
+        with open(filepath, 'w') as jsonFile:
+            for x,item in enumerate(inventory.content):
+                inventory.content[x] = item.__dict__
+            inv = json.dumps(inventory.__dict__)
             jsonFile.write(inv)
 
 
