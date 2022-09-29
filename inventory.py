@@ -15,11 +15,6 @@ class Item():
         self.amount = amount
         self.priority = priority
 
-    @classmethod
-    def fromdict(self, dictionary: dict):
-        """creates and returns an Item obj from a dictionary given"""
-        return self(**dictionary)
-
     def printItem(self):
         """prints formated item details in a line.
         *FOR testing purposes. will be deleted*"""
@@ -73,16 +68,6 @@ class Inventory():
             self.name = name
         self.description = description
         self.content = content
-    
-    @classmethod
-    def from_jasonFile(self, jsonData: str):
-        """creates and returns an Inventory obj from a JSON file string
-         CONSIDER : rewriting and use @overload __init__ for different constructors"""
-        for x,item in enumerate(jsonData['content']):
-            # makes sure the items dictionaries also convert to items
-            # recently changed from: = Item(**item)
-            jsonData['content'][x] = Item.fromdict(item)
-        return self(**jsonData)
 
     def copy(self):
         """return a copy of the inventory"""
@@ -182,21 +167,20 @@ def create_new_db(filename='inventory', desc='', type='json') -> Inventory:
     if filename in getInventoryList():
         print("filename already exists, please choose another name")
         return None
-    updateDB(new_inv, type)
+    export_inventory(new_inv, type)
     return new_inv
     # TO ADD: other file formats
 
 
-def updateDB(inventory: Inventory, type= 'json') -> None:
+def export_inventory(inventory: Inventory) -> None:
     """updates the inventory FILE in the db directory
     type: the file format to save the inventory"""
-    filepath = f"{mainConstants.DATABASE_DIR}/{inventory.name}.{type}"
-    if type == 'json':
-        with open(filepath, 'w') as jsonFile:
-            for x,item in enumerate(inventory.content):
-                inventory.content[x] = item.__dict__
-            inv = json.dumps(inventory.__dict__)
-            jsonFile.write(inv)
+    filepath = f"{mainConstants.DATABASE_DIR}/{inventory.name}.json"
+    with open(filepath, 'w') as jsonFile:
+        for x,item in enumerate(inventory.content):
+            inventory.content[x] = item.__dict__
+        inv = json.dumps(inventory.__dict__)
+        jsonFile.write(inv)
 
 
 def import_inventory(filename: str) -> Inventory:

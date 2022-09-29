@@ -21,7 +21,8 @@ from PyQt5.QtWidgets import (
     )
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 import sys
-import inventory
+from conversion_module import create_invList, updateDirectory
+from inventory import Inventory
 import mainConstants
 
 class mainWindow(QWidget): ### Tested
@@ -58,15 +59,15 @@ class mainWindow(QWidget): ### Tested
     def func_exit(self):
         self.close()
 
-class InventoryWindow(QDialog): ### Tested
+class InventoryWindow(QDialog): 
     def __init__(self, parent_pos):
         super(InventoryWindow, self).__init__()
         self.setWindowTitle("Inventories")
         self.setGeometry(parent_pos.x(), parent_pos.y(), 600, 200)
         
-        self.invo_list = []                 # a list of the inventories list
+        self.invo_list = create_invList()   # a list of the inventories list
         self.listWidget = QListWidget()     # the list widget for the gui
-        self.refreshInvoList()
+        self.refreshInvoList()              # refresh the View of the inventory list
 
         # the button layout on the right
         verticalBoxLayout = QVBoxLayout()
@@ -92,21 +93,21 @@ class InventoryWindow(QDialog): ### Tested
 
     def createNew(self):
         """open new UI for adding a new Inventory"""
-        self.new_window = subInventoryWindow(self.pos(), "New Inventory")
+        self.new_window = subInventoryWindow(self.pos(), "New Inventory", self.invo_list)
         self.new_window.newObjCreated.connect(self.add_inventory)
         self.new_window.setWindowModality(Qt.ApplicationModal)
         self.new_window.show()
 
-    def add_inventory(self, data):
+    def add_inventory(self, new_invoObject: Inventory):
         """creates a new inventory file in the dir
-        with data input from the user"""
-        if not data:
+        with new_invoObject input from the user"""
+        if not new_invoObject:
             return 
         for item in self.invo_list:
-            if item.name == data['name']:
+            if item.name == new_invoObject.name:
                 print("name already exist, choose another  ****alert popup****")
                 return
-        inventory.create_new_db(filename=data['name'],desc=data['description'],type=data['type'])
+        self.invo_list.append(new_invoObject)
         self.refreshInvoList()
 
     def edit(self):
@@ -114,37 +115,32 @@ class InventoryWindow(QDialog): ### Tested
         if self.invo_list:
             self.selectedObj = self.invo_list.pop(self.listWidget.currentRow())
 
-            self.new_window = subInventoryWindow(self.pos(), "Edit Inventory", self.selectedObj)
+            self.new_window = subInventoryWindow(self.pos(), "Edit Inventory", self.invo_list, self.selectedObj)
             self.new_window.newObjCreated.connect(self.edit_inventory)
             self.new_window.setWindowModality(Qt.ApplicationModal)
             self.new_window.show()
 
-    def edit_inventory(self, data):
-        if not data:
+    def edit_inventory(self, new_invoObject: Inventory):
+        if not new_invoObject:
             self.invo_list.append(self.selectedObj)
             self.refreshInvoList()
             return 
         for item in self.invo_list:
-            if item.name == data['name']:
+            if item.name == new_invoObject.name:
                 print("name already exist, choose another  ****alert popup****")
                 self.invo_list.append(self.selectedObj)
                 self.refreshInvoList()
                 return
 
-        inventory.delete_inventory(self.selectedObj.name)
-        self.selectedObj.updateName = data['name']
-        self.selectedObj.updateDescription = data['description']
-        # self.selectedObj.update({
-        #     'name': data['name'],
-        #     'description': data['description']
-        # })
-        inventory.updateDB(self.selectedObj, data['type'])
+        self.invo_list.append(new_invoObject)
         self.refreshInvoList()
 
     def remove(self):
-        selectedObj = self.invo_list.pop(self.listWidget.currentRow())
-        inventory.delete_inventory(selectedObj.name)
-        self.refreshInvoList()
+        curRow = self.listWidget.currentRow()
+        if curRow >= 0:
+            print("ADD: ARE YOU SURE? OPEN 'CONFIRM' WINODW")
+            self.invo_list.pop(curRow)
+            self.refreshInvoList()
 
     def viewInventory(self):
         selectedObj = self.invo_list[self.listWidget.currentRow()]
@@ -153,26 +149,24 @@ class InventoryWindow(QDialog): ### Tested
         self.new_window.show()
 
     def back(self):
+        self.close()
+
+    def closeEvent(self, event) -> None:
+        updateDirectory(self.invo_list)
         self.new_window = mainWindow()
         self.new_window.show()
-        self.close()
 
     def refreshInvoList(self):
         """refreshes the self.listWidget with filenames.\n
         AND the self.invo_list of inventories\n
         after updates and changes"""
         self.listWidget.clear()
-        self.invo_list: list[inventory.Inventory] = []
-        dir_list = inventory.getInventoryList()
-        if dir_list:
-            for dir in dir_list:
-                new_invoObj = inventory.import_inventory(dir)
-                self.invo_list.append(new_invoObj)
-                self.listWidget.addItem(new_invoObj.name)
+        for invo in self.invo_list:
+            self.listWidget.addItem(invo.name)
         self.listWidget.setCurrentRow(0)
 
 class inventroyViewWindow(QDialog):
-    def __init__(self, parent_pos, selectedObj:inventory.Inventory=None):
+    def __init__(self, parent_pos, selectedObj:Inventory=None):
         super(inventroyViewWindow, self).__init__()
 
         self.setWindowTitle("inventories")
@@ -180,12 +174,13 @@ class inventroyViewWindow(QDialog):
         self.mainLayout = QVBoxLayout()
         # Set up the view and load the data
         self.view = QTableWidget()
-        self.invoObj = selectedObj.copy()           # a COPY of the inventory were in
-        self.itemList = self.invoObj.content
+
+        self.itemList = selectedObj.content
+
         self.view.setColumnCount(len(mainConstants.ITEM_LABELS))
         self.view.setHorizontalHeaderLabels(mainConstants.ITEM_LABELS)
-        self.itemCategories = self.invoObj.getCategories()
-        for item in self.itemList:
+        self.itemCategories = selectedObj.getCategories()
+        for item in selectedObj.content:
             rows = self.view.rowCount()
             self.view.setRowCount(rows + 1)
             id_item = QTableWidgetItem(item.id)
@@ -231,6 +226,7 @@ class inventroyViewWindow(QDialog):
         self.setLayout(hbox)
 
     def createNewItem(self):
+        return
         self.new_window = newItemWindow(self.pos(), self.itemCategories)
         self.new_window.setWindowModality(Qt.ApplicationModal)
         self.new_window.show()
@@ -243,33 +239,28 @@ class inventroyViewWindow(QDialog):
             self.itemList[row].updateCategory(self.view.cellWidget(row, 2).currentText())
             self.itemList[row].updateAmount(int(self.view.cellWidget(row, 3).text()))
             self.itemList[row].updatePriority(self.view.cellWidget(row, 4).currentText())
-        inventory.updateDB(self.invoObj)
         self.close()
 
 
     def removeItem(self):
         pass
 
+class subInventoryWindow(QDialog):      # TESTED
+    newObjCreated = pyqtSignal(object)
 
-class subInventoryWindow(QDialog):
-    newObjCreated = pyqtSignal(dict)
-
-    def __init__(self, parent_pos, title, invoObj=None):
+    def __init__(self, parent_pos, title, invoList, invoObj=None):
         super(subInventoryWindow, self).__init__()
         self.setWindowTitle(title)
         self.setGeometry(parent_pos.x(), parent_pos.y(), 600, 200)
         self.formGroupBox = QGroupBox()
 
         self.nameLineEdit = QLineEdit()
-        self.typeLineEdit = QLineEdit()
         self.descriptionLineEdit = QPlainTextEdit()
         if invoObj:                     # currently editing existing inventory in this window
             self.nameLineEdit.setText(invoObj.name)
-            self.typeLineEdit.setText('json')
             self.descriptionLineEdit.setPlainText(invoObj.description)
         else:                           # currently creating new inventory
             self.nameLineEdit.setText('default')
-            self.typeLineEdit.setText('json')
 
         self.createForm()
 
@@ -285,23 +276,19 @@ class subInventoryWindow(QDialog):
 
     def getInfo(self):
         # this will send the new item objet to the inventory
-        new_invoDict = {
-            'name': self.nameLineEdit.text(),
-            'type': self.typeLineEdit.text(),
-            'description': self.descriptionLineEdit.toPlainText(),
-        }
-        self.newObjCreated.emit(new_invoDict)
+        new_invoObject = Inventory(name=self.nameLineEdit.text(), description=self.descriptionLineEdit.toPlainText())
+        self.newObjCreated.emit(new_invoObject)
         self.close()
     
     @pyqtSlot()
     def back(self):
-        self.newObjCreated.emit({})
+        self.newObjCreated.emit(None)
         self.close()
+
 
     def createForm(self):
         layout = QFormLayout()
         layout.addRow(QLabel("Name"), self.nameLineEdit)
-        layout.addRow(QLabel("File Type"), self.typeLineEdit)
         layout.addRow(QLabel("Description (Optional)"), self.descriptionLineEdit)
 
         self.formGroupBox.setLayout(layout)
