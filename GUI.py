@@ -11,10 +11,12 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, 
     QHBoxLayout,
     QLabel, 
+    QScrollArea,
     QFormLayout,
     QCheckBox,
     QPushButton,
     QListWidget,
+    QMessageBox,
     QPlainTextEdit,
     QTableWidget,
     QTableWidgetItem,
@@ -22,8 +24,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 import sys
 from conversion_module import create_invList, updateDirectory
-from inventory import Inventory
+from inventory import Inventory, Item
 import mainConstants
+import about
 
 class mainWindow(QWidget): ### Tested
     def __init__(self):
@@ -138,9 +141,13 @@ class InventoryWindow(QDialog):
     def remove(self):
         curRow = self.listWidget.currentRow()
         if curRow >= 0:
-            print("ADD: ARE YOU SURE? OPEN 'CONFIRM' WINODW")
-            self.invo_list.pop(curRow)
-            self.refreshInvoList()
+            button = QMessageBox.question(self, 
+            "Remove Inventory", 
+            f"Are you sure you want to remove {self.invo_list[curRow].name} ?")
+
+            if button == QMessageBox.Yes:
+                self.invo_list.pop(curRow)
+                self.refreshInvoList()
 
     def viewInventory(self):
         selectedObj = self.invo_list[self.listWidget.currentRow()]
@@ -175,12 +182,69 @@ class inventroyViewWindow(QDialog):
         # Set up the view and load the data
         self.view = QTableWidget()
 
-        self.itemList = selectedObj.content
+        self.selectedObject = selectedObj
+        self.itemList = self.selectedObject.content
 
         self.view.setColumnCount(len(mainConstants.ITEM_LABELS))
         self.view.setHorizontalHeaderLabels(mainConstants.ITEM_LABELS)
-        self.itemCategories = selectedObj.getCategories()
-        for item in selectedObj.content:
+
+        self.refreshTable()
+
+        vbox = QVBoxLayout()
+        vbox.setAlignment(Qt.AlignTop)
+
+        for text, slot in (
+            ("Save Changes", self.saveInventory),
+            ("Add New Item", self.createNewItem),
+            ("Remove Item", self.removeItem),
+            ("Back", self.close)):
+
+            button= QPushButton(text)
+
+            vbox.addWidget(button)
+            button.clicked.connect(slot)
+
+        hbox = QHBoxLayout()
+        hbox.addWidget(self.view)
+        hbox.addLayout(vbox)
+        self.setLayout(hbox)
+
+    def createNewItem(self):
+        self.new_window = newItemWindow(self.pos(), self.itemCategories, self.selectedObject)
+        self.new_window.newObjCreated.connect(self.add_item)
+        self.new_window.setWindowModality(Qt.ApplicationModal)
+        self.new_window.show()
+
+    def add_item(self, new_itemObj):
+        self.selectedObject.addItem(new_itemObj)
+        self.refreshTable()
+
+    def saveInventory(self):
+        rowCount = self.view.rowCount()
+        columnCount = self.view.columnCount()
+
+        for row in range(rowCount):
+            self.itemList[row].updateCategory(self.view.cellWidget(row, 2).currentText())
+            self.itemList[row].updateAmount(int(self.view.cellWidget(row, 3).text()))
+            self.itemList[row].updatePriority(self.view.cellWidget(row, 4).currentText())
+        self.close()
+
+    def removeItem(self):
+        curRow = self.view.currentRow()
+        if curRow >= 0:
+            button = QMessageBox.question(self, 
+            "Remove item", 
+            f"Are you sure you want to remove {self.selectedObject.content[curRow].name} ?")
+
+            if button == QMessageBox.Yes:
+                self.selectedObject.content.pop(curRow)
+                self.refreshTable()
+
+    def refreshTable(self):
+        self.view.clear()
+        self.view.setRowCount(0)
+        self.itemCategories = self.selectedObject.getCategories()
+        for item in self.selectedObject.content:
             rows = self.view.rowCount()
             self.view.setRowCount(rows + 1)
             id_item = QTableWidgetItem(item.id)
@@ -206,44 +270,6 @@ class inventroyViewWindow(QDialog):
             self.view.setCellWidget(rows, 4, priorityBox)
         self.view.resizeColumnsToContents()
 
-        vbox = QVBoxLayout()
-        vbox.setAlignment(Qt.AlignTop)
-
-        for text, slot in (
-            ("Save Inventory", self.saveInventory),
-            ("Add New Item", self.createNewItem),
-            ("Remove Item", self.removeItem),
-            ("Back", self.close)):
-
-            button= QPushButton(text)
-
-            vbox.addWidget(button)
-            button.clicked.connect(slot)
-
-        hbox = QHBoxLayout()
-        hbox.addWidget(self.view)
-        hbox.addLayout(vbox)
-        self.setLayout(hbox)
-
-    def createNewItem(self):
-        return
-        self.new_window = newItemWindow(self.pos(), self.itemCategories)
-        self.new_window.setWindowModality(Qt.ApplicationModal)
-        self.new_window.show()
-
-    def saveInventory(self):
-        rowCount = self.view.rowCount()
-        columnCount = self.view.columnCount()
-
-        for row in range(rowCount):
-            self.itemList[row].updateCategory(self.view.cellWidget(row, 2).currentText())
-            self.itemList[row].updateAmount(int(self.view.cellWidget(row, 3).text()))
-            self.itemList[row].updatePriority(self.view.cellWidget(row, 4).currentText())
-        self.close()
-
-
-    def removeItem(self):
-        pass
 
 class subInventoryWindow(QDialog):      # TESTED
     newObjCreated = pyqtSignal(object)
@@ -260,7 +286,7 @@ class subInventoryWindow(QDialog):      # TESTED
             self.nameLineEdit.setText(invoObj.name)
             self.descriptionLineEdit.setPlainText(invoObj.description)
         else:                           # currently creating new inventory
-            self.nameLineEdit.setText('default')
+            self.nameLineEdit.setText('')
 
         self.createForm()
 
@@ -276,9 +302,14 @@ class subInventoryWindow(QDialog):      # TESTED
 
     def getInfo(self):
         # this will send the new item objet to the inventory
-        new_invoObject = Inventory(name=self.nameLineEdit.text(), description=self.descriptionLineEdit.toPlainText())
-        self.newObjCreated.emit(new_invoObject)
-        self.close()
+        if not self.nameLineEdit.text():
+            button = QMessageBox.warning(self, 
+            "Warning",
+            "Please fill out ALL THE fields")
+        else:
+            new_invoObject = Inventory(name=self.nameLineEdit.text(), description=self.descriptionLineEdit.toPlainText())
+            self.newObjCreated.emit(new_invoObject)
+            self.close()
     
     @pyqtSlot()
     def back(self):
@@ -300,9 +331,35 @@ class aboutWindow(QDialog):
         self.setWindowTitle(titleName)
         self.setGeometry(parent_pos.x(), parent_pos.y(), 300, 400)
 
+        self.scroll = QScrollArea()             
+        self.widget = QWidget()                 
+        self.vbox = QVBoxLayout()               
+
+        object = QLabel(about.patch_notes)
+        self.vbox.addWidget(object)
+
+        self.widget.setLayout(self.vbox)
+
+        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll.setWidget(self.widget)
+
+        self.text = QLabel()
+        self.text.setText(about.about_text)
+        self.text.setAlignment(Qt.AlignLeft)
+        layout = QVBoxLayout()
+        layout.addWidget(self.text)
+        layout.addWidget(self.scroll)
+        self.setLayout(layout)
+        self.setFixedSize(layout.sizeHint().width(), layout.sizeHint().height())
+
 class newItemWindow(QDialog):
-    def __init__(self, parent_pos, categories):
+    newObjCreated = pyqtSignal(object)
+
+    def __init__(self, parent_pos, categories, invoObj):
         super(newItemWindow, self).__init__()
+
+        self.selectedObj = invoObj
 
         self.setWindowTitle("Add Items")
         self.setGeometry(parent_pos.x(), parent_pos.y(), 300, 400)
@@ -334,13 +391,21 @@ class newItemWindow(QDialog):
 
     def getInfo(self):
         # this will send the new item objet to the inventory
-        new_itemObj = inventory.Item(
-            id=inventory.create_new_id(),
-            name=self.nameLineEdit.text(),
-            category=self.categoryComboBox.currentText(),
-            amount=self.amountSpinBar.text(),
-            priority=self.priorityCheckBox.isChecked()
-            )
+        if not self.nameLineEdit.text() or not self.categoryComboBox.currentText():
+            button = QMessageBox.warning(self, 
+            "Warning",
+            "Please fill out ALL THE fields")
+
+        else:
+            new_itemObj = Item(
+                name=self.nameLineEdit.text(),
+                category=self.categoryComboBox.currentText(),
+                amount=int(self.amountSpinBar.text()),
+                priority=mainConstants.PRIORITIES[int(self.priorityCheckBox.isChecked())]
+                )
+            self.newObjCreated.emit(new_itemObj)
+            self.close()
+
 
     def createForm(self):
         layout = QFormLayout()
