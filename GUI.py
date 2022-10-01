@@ -26,7 +26,6 @@ import sys
 from conversion_module import create_invList, updateDirectory
 from inventory import Inventory, Item
 import mainConstants
-import about
 
 class mainWindow(QWidget): ### Tested
     def __init__(self):
@@ -335,7 +334,7 @@ class aboutWindow(QDialog):
         self.widget = QWidget()                 
         self.vbox = QVBoxLayout()               
 
-        object = QLabel(about.patch_notes)
+        object = QLabel(mainConstants.patch_notes)
         self.vbox.addWidget(object)
 
         self.widget.setLayout(self.vbox)
@@ -345,7 +344,7 @@ class aboutWindow(QDialog):
         self.scroll.setWidget(self.widget)
 
         self.text = QLabel()
-        self.text.setText(about.about_text)
+        self.text.setText(mainConstants.about_text)
         self.text.setAlignment(Qt.AlignLeft)
         layout = QVBoxLayout()
         layout.addWidget(self.text)
