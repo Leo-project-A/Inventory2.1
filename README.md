@@ -10,7 +10,11 @@ Create and edit an inventory for your home/office/wearhouse
 <!-- GETTING STARTED -->
 ## Getting Started
 
-1. Run in your terminal
+1. Install dependencies
+   ```sh
+   pip install -r requirements.txt
+   ```
+2. Run the program
    ```sh
    python GUI.py
    ```
