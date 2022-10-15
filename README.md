@@ -8,8 +8,8 @@ An inventory system.
 Create and edit an inventory for your home/office/wearhouse  
 
 ![image](https://user-images.githubusercontent.com/74867910/194928707-7c2a9d6b-cb4c-4f11-99eb-d07cdd60f872.png)  
-![image](https://user-images.githubusercontent.com/74867910/196007280-444fc2e4-3b40-4d35-81c7-7d8ce5b8d8fc.png)
-![image](https://user-images.githubusercontent.com/74867910/194928777-a7d81901-8e8f-465b-bf36-e40eb2219bc2.png)  
+![image](https://user-images.githubusercontent.com/74867910/196007323-f1ca6cee-8b7e-4000-b70f-243ee7c82988.png)  
+![image](https://user-images.githubusercontent.com/74867910/196007311-672663b4-61b3-42d1-bd97-3d430de0b678.png)  
 ![image](https://user-images.githubusercontent.com/74867910/194929351-658cf598-010a-4e6d-a2e2-514d5e0052b2.png) 
 ![image](https://user-images.githubusercontent.com/74867910/194928850-b2899812-0dd8-461a-bf18-8cf742a70ec8.png)  
 
