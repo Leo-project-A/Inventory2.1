@@ -2,6 +2,7 @@
 from inventory import Inventory, Item
 import os
 import json
+
 from mainConstants import DATABASE_DIR
 
 def convert_files(filepath_list: list[str]) -> list[Inventory]:
@@ -67,3 +68,10 @@ def delete_inventory(inveontory_name: str):
             os.remove(DATABASE_DIR + dir)
             return True
     return False
+
+def save_shoplist(str_list: list[str], output_dir: str, filename: str) -> None:
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    with open(output_dir + filename, 'w') as file:
+        for item in str_list:
+            file.write(item + '\n')

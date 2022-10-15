@@ -34,7 +34,8 @@ Create and edit an inventory for your home/office/wearhouse
 
 - [x] Create inventory system
 - [x] Edit items, add, remove
-- [ ] Show shopping list (items that are low in count)
+- [x] Show shopping list (items that are low in count)
+   - [ ] Exporting the shopping list and sending it via email notification
 
 See the [open issues](https://github.com/Leo-project-A/Inventory2.1/issues) for a full list of proposed features (and known issues).
 

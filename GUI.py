@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
     )
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 import sys
-from conversion_module import create_invList, updateDirectory
+from conversion_module import create_invList, updateDirectory, save_shoplist
 from inventory import Inventory, Item
 import mainConstants
 
@@ -77,6 +77,7 @@ class InventoryWindow(QDialog):
         for text, slot in (
             ("Create New", self.createNew),
             ("Edit", self.edit),
+            ("Get Shopping List", self.get_shopping_list),
             ("Remove", self.remove),
             ("View Inventory", self.viewInventory),
             ("Back", self.back)):
@@ -137,6 +138,16 @@ class InventoryWindow(QDialog):
         self.invo_list.append(new_invoObject)
         self.refreshInvoList()
 
+    def get_shopping_list(self):
+        curRow = self.listWidget.currentRow()
+        if curRow >= 0:
+            list_directory = f"{self.invo_list[curRow].name} {mainConstants.SHOP_SUFFIX}"
+            save_shoplist(self.invo_list[curRow].get_shop_list(), mainConstants.SHOP_DIR, list_directory)
+            button = QMessageBox.about(self,
+                self.invo_list[curRow].name,
+                f'''Exported shopping list to computer in directory: 
+                {list_directory}''')
+        
     def remove(self):
         curRow = self.listWidget.currentRow()
         if curRow >= 0:

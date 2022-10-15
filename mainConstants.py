@@ -1,5 +1,7 @@
 INVENTORY_PATH = "inventoryDB.json"
 DATABASE_DIR = 'DBs/'
+SHOP_DIR = 'shopping/'
+SHOP_SUFFIX = 'shoplist.txt'
 
 ITEM_LABELS = ["id", "name", "category", "amount", "priority"]
 PRIORITIES = ['low', 'HIGH']
@@ -18,6 +20,12 @@ Project Link: https://github.com/Leo-project-A/Inventory2.1
 '''
 
 patch_notes = '''
+- 2.1.3 -
+
+-Added the option to export the shopping list for any inventory
+    -Saves the items in the inventory with amount = 0 in a text file. 
+    -Directory: 'shopping/'
+
 - 2.1.2 -
 
 -Reworked the inventory object managemnt 

@@ -42,20 +42,6 @@ class Item():
     def updatePriority(self, new_priority):
         self.priority = new_priority
 
-
-    # def update(self, changes):
-    #     """updates the item with the changes from the dict. \n
-    #     can be multiple changes at once
-        
-    #     {
-    #         'name': 'new_name',
-    #         'category': 'new_category'
-
-    #         ...
-    #     }"""
-    #     for k,v in changes.items():
-    #         self.__setattr__(k, v)
-
 class Inventory():
     def __init__(self, id=None, name='inventory', description= '', content= []) -> None:
         if id:
@@ -132,19 +118,6 @@ class Inventory():
     def updateContent(self, new_content):
         self.content = new_content
 
-    # def update(self, changes: dict):
-    #     """updates the Inventory with the changes from the dict. \n
-    #     can be multiple changes at once
-        
-    #     {
-    #         'name': 'new_name',
-    #         'description': 'new_description'
-
-    #         ...
-    #     }"""
-    #     for k,v in changes.items():
-    #         self.__setattr__(k, v)
-
     def updateItem(self, item: str, changes: dict):
         """updates the wanted 'item' with all the changes in the dictionary"""
         wanted_item = self.getItem(item)
@@ -157,6 +130,13 @@ class Inventory():
             if type(item) == Item:
                 categories.add(item.category)
         return list(categories)
+
+    def get_shop_list(self):
+        shoplist = []
+        for item in self.content:
+            if item.amount <= 0:
+                shoplist.append(item.name)
+        return shoplist
 
 
 def create_new_db(filename='inventory', desc='', type='json') -> Inventory:
